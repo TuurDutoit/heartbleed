@@ -156,9 +156,9 @@ Because of a programming error in OpenSSL 1.0.1, the library will reserve a memo
 
 ## Types
 ### Record type
-- `0x16`: Handshake. Control messages to set up communication between server and client
 - `0x14`: Change cipher spec. Used to change the ciphers used in an active session
 - `0x15`: Alert. Relays errors, warnings and other informational data
+- `0x16`: Handshake. Control messages to set up communication between server and client
 - `0x17`: Application data. Carries the actual (encrypted) data
 - `0x18`: Heartbeat
 
