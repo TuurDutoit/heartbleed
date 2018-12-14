@@ -1,29 +1,63 @@
 SSL / TLS packets
 ===
-This document provides more info about the packet structure of SSL / TLS records, based on [rfc4346](https://tools.ietf.org/html/rfc4346) (TLSv1.1).
+This document provides more info about the packet structure of SSL / TLS records, based on [rfc4346](https://tools.ietf.org/html/rfc4346) (TLSv1.1). Other versions of this protocol, as well as the older SSL protocol, are very similar.
 
-The structure of a packet, or part thereof, is rendered as a list of fields, each consisting of a number of bytes and a name / description, separated by a colon (:).
+The structure of a packet, or part thereof, is shown as a list of fields, each consisting of a number of bytes and a name / description, separated by a colon (:).
+
+## Overview
+The SSL / TLS protocol actually consists of several subprotocols. The underlying protocol, that allows these to work together, is the `record` protocol. Every SSL / TLS record starts with some basic info: SSL / TLS version, length of the record and type of the contained message. The data that follows this header is called the `message`. Four types of messages are defined:
+
+- Handshake: used to set up connections, negotiating ciphers and validating certificates
+- Alerts: used to relay errors, warnings and other informational data
+- Change cipher spec: used to renegotiate the cipher used in this session
+- Application data: carries the actual (encrypted) data
 
 ## Record
-- 1: type
-- 2: version
+- 1: type of the record. See [Record type](#record-type)
+- 2: SSL / TLS version. See [Version](#version)
     - 1: major
     - 1: minor
-- 2: length (excluding this header)
-- *: data; depends on record type
+- 2: length of the record (excluding this header)
+- *: data. Depends on record type
 
 ### Handshake
-- 1: handshake type
-- 3: length
-- *: data; depends on message type
+Content type: `0x16`
+
+- 1: handshake type; see [Handshake type](#handshake-type)
+- 3: length of the message (excluding this header)
+- *: data. Depends on message type
 
 #### Handshake: Client hello
-- 2: version (client)
-- 4: unix datetime
-- 28: random bytes
+- 2: SSL / TLS version. Usually equal to the version specified in the record header. See [Version](#version)
+- 4: current unix datetime
+- 28: random bytes. Used to construct the master secret
+- session id
+    - 1: length
+    - 0-32: session id
+- cipher suites
+    - 2: length (in bytes)
+    - 2..*: list of supported cipher suites (2 bytes per suite). See [IANA: TLS parameters](https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml#tls-parameters-4) for a complete list
+- compression methods
+    - 2: length (in bytes)
+    - 1..*: list of supported compression methods (1 byte per method). Usually, this list only contains `0x00`: no compression
+- extensions
+    - 2: length (in bytes)
+    - *: list of TLS extensions (variable length).
+        - 2: type of the extension. See [IANA: TLS extensions](https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml) for a complete list
+        - 2: length of the extension data (in bytes)
+        - *: extension data. Depends on the extension type
+
+### Heartbeat
+The heartbeat message is actually not defined in the TLSv1.1 standard ([rfc4346](https://tools.ietf.org/html/rfc4346)), but rather exists as its own extension to the protocol. IANA reserved content type `0x18` for heartbeat messages.
+
+- 1: heartbeat message type. See [Heartbeat type](#heartbeat-type)
+- 2: payload length
+- *: payload (random data). Simply sent back by the server in the response
+- 16..*: padding. Used to fill up the minimum size of a TLS record and thus ignored by the server. Must be at least 16 bytes long
 
 
-## Example
+## Examples
+### Client hello
 ```
 16 03 02 00 dc
 01 00 00 d8
@@ -52,17 +86,17 @@ c0 04 00 2f 00 96 00 41  c0 11 c0 07 c0 0c c0 02
 
 - type: 16 = handshake
 - version: 03 02 = TLSv1.1
-- length: 00 dc = 220 Bytes
+- length: 00 dc = 220 bytes
 - data: handshake record
     - type: 01 = client hello
-    - length: 00 00 d8 = 216 Bytes
+    - length: 00 00 d8 = 216 bytes
     - data: client hello
         - client version: 03 02 = TLSv1.1
         - time: 53 43 5b 90 = 8 april 2014
         - 28 random bytes
         - session id length: 00
         - session id: empty
-        - cipher suites length: 00 66 = 102 Bytes => 51 cipher suites (2 Bytes / suite)
+        - cipher suites length: 00 66 = 102 bytes => 51 cipher suites (2 bytes / suite)
         - cipher suites:
             - c0 14 = TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
             - c0 0a = TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
@@ -74,62 +108,82 @@ c0 04 00 2f 00 96 00 41  c0 11 c0 07 c0 0c c0 02
         - extensions:
             - ec_point_formats
                 - type: 00 0b = ec_point_formats
-                - length: 00 04 = 4 Bytes
+                - length: 00 04 = 4 bytes
                 - data: ECPointFormatList
-                    - length: 03 = 3 Bytes => 3 formats (1 Byte / format)
+                    - length: 03 = 3 bytes => 3 formats (1 byte / format)
                     - formats:
                         - 00 = uncompressed
                         - 01 = ansiX962_compressed_prime
                         - 02 = ansiX962_compressed_char2
             - supported_groups
                 - type: 00 0a = supported_groups (previously elliptic_curves)
-                - length: 00 34 = 52 Bytes
+                - length: 00 34 = 52 bytes
                 - data: NamedCurveList
-                    - length: 00 32 = 50 Bytes => 25 curves (2 Bytes / curve)
+                    - length: 00 32 = 50 bytes => 25 curves (2 bytes / curve)
                     - curves:
                         - 00 0e = sect571r1
                         - 00 0d = sect571k1
                         - ...
             - session_ticket
                 - type: 00 23 = session_ticket
-                - length: 00 00 = 0 Bytes
+                - length: 00 00 = 0 bytes
                 - data: empty
             - heartbeat
                 - type: 00 0f = heartbeat
                 - length: 00 01
                 - data (HeartbeatMode): 01 = peer_allowed_to_send
 
+## Heartbeat
+Content type: `0x18`  
+The following packet exploits the heartbleed vulnerability:
 
+```
+18 03 02 00 03
+01 40 00
+```
 
+- type: `0x18` = heartbeat. See [Record type](#record-type)
+- version: `0x03 02` = TLSv1.1. See [Version](#version)
+- length: `0x00 03` = 3 bytes
+- data: Heartbeat message
+    - type: `0x01` = request
+    - length: `40 00` = 16384 bytes
+    - payload: empty
+    - padding: empty
+
+Because of a programming error in OpenSSL 1.0.1, the library will reserve a memory segment of 16384 bytes and copies the (empty) payload and padding into it, which leaves the memory unchanged. Then, it sends back a response, including the content of this memory segment - which wasn't cleared in any way, exposing potentially sensitive data to clients.
 
 
 ## Types
 ### Record type
-- Handshake: 16
-- Change cipher spec: 14
-- Alert: 15
-- Application data: 17
+- `0x16`: Handshake. Control messages to set up communication between server and client
+- `0x14`: Change cipher spec. Used to change the ciphers used in an active session
+- `0x15`: Alert. Relays errors, warnings and other informational data
+- `0x17`: Application data. Carries the actual (encrypted) data
+- `0x18`: Heartbeat
 
 ### Version
-- SSLv2: 0002
-- SSLv3: 0300
-- TLSv1: 0301
-- TLSv1.1: 0302
-- TLSv1.2: 0303
+- `0x00 02`: SSLv2
+- `0x03 00`: SSLv3
+- `0x03 01`: TLSv1
+- `0x03 02`: TLSv1.1
+- `0x03 03`: TLSv1.2
 
 ### Handshake type
-- Hello request: 00
- - Sent by server to request the start of a handshake
-- Client hello: 01
-    - First message by client, or in response to hello request, or when client wants to renegotiate the connection
-- Server hello: 02
-- Certificate: 0B
-- Server key exchange: 0C
-- Certificate request: 0D
-- Server done: 0E
-- Certificate verify: 0F
-- Client key exchange: 10
-- Finished: 14
+- `0x00`: Hello request. Sent by server to request the start of a (new) handshake
+- `0x01`: Client hello. First message by client, or in response to a hello request, or when client wants to renegotiate the connection
+- `0x02`: Server hello. Sent in response to a client hello. Contains the server SSL/ TLS version, chosen cipher suites, etc.
+- `0x0b`: Certificate. Contains the certificate chain of the server, for validation by the client.
+- `0x0c`: Server key exchange. Some encryption algorithms (e.g. Diffie-Helmann) require some extra data to be exchanged, apart from the certificates, in order to agree on a shared secret. This message is sent right after the `Certificate` message (if needed) and contains this extra data.
+- `0x0d`: Certificate request. A server can optionally request a certificate from the client by sending this message right after the `Certificate` or `Server key exchange` message(s).
+- `0x0e`: Server done. Signals that the `Certificate` message and other optional messages (`Server key exchange`, etc.) have been sent. The server now awaits the client's response.
+- `0x0f`: Certificate verify / Client certificate. If the server requests a certificate from the client (with a `Certificate request` message), the client responds with this message containing the certificate.
+- `0x10`: Client key exchange. Transmits the shared secret (e.g. the RSA key or Diffie-Hellman parameters) to the server.
+- `0x14`: Finished. Sent after a `Change cipher spec` message to verify that the authentication was successful. This is the first message to be encrypted.
+
+### Heartbeat type
+- `0x01`: Request
+- `0x02`: Response
 
 
 ## Sources
@@ -138,3 +192,4 @@ c0 04 00 2f 00 96 00 41  c0 11 c0 07 c0 0c c0 02
 - https://tools.ietf.org/html/rfc4346
 - https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml
 - https://www.iana.org/assignments/tls-extensiontype-values/tls-extensiontype-values.xhtml
+- https://tools.ietf.org/html/rfc6520
