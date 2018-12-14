@@ -84,54 +84,54 @@ c0 04 00 2f 00 96 00 41  c0 11 c0 07 c0 0c c0 02
 00 0f 00 01 01
 ```
 
-- type: 16 = handshake
-- version: 03 02 = TLSv1.1
-- length: 00 dc = 220 bytes
+- type: `0x16` = handshake
+- version: `0x03 02` = TLSv1.1
+- length: `0x00 dc` = 220 bytes
 - data: handshake record
-    - type: 01 = client hello
-    - length: 00 00 d8 = 216 bytes
+    - type: `0x01` = client hello
+    - length: `0x00 00 d8` = 216 bytes
     - data: client hello
-        - client version: 03 02 = TLSv1.1
-        - time: 53 43 5b 90 = 8 april 2014
+        - client version: `0x03 02` = TLSv1.1
+        - time: `0x53 43 5b 90` = 8 april 2014
         - 28 random bytes
-        - session id length: 00
+        - session id length: `0x00` = 0 bytes
         - session id: empty
-        - cipher suites length: 00 66 = 102 bytes => 51 cipher suites (2 bytes / suite)
+        - cipher suites length: `0x00 66` = 102 bytes => 51 cipher suites (2 bytes / suite)
         - cipher suites:
-            - c0 14 = TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
-            - c0 0a = TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
+            - `0xc0 14` = TLS_ECDHE_RSA_WITH_AES_256_CBC_SHA
+            - `0xc0 0a` = TLS_ECDHE_ECDSA_WITH_AES_256_CBC_SHA
             - ...
-        - compression methods length: 01 = 1 compression method
+        - compression methods length: `0x01` = 1 compression method
         - compression methods:
-            - 00 = null: no compression (pretty much no SSL/TLS implementation support compression)
-        - extensions length: 00 49 = 73
+            - `0x00` = null: no compression (pretty much no SSL/TLS implementation support compression)
+        - extensions length: `0x00 49` = 73
         - extensions:
             - ec_point_formats
-                - type: 00 0b = ec_point_formats
-                - length: 00 04 = 4 bytes
+                - type: `0x00 0b` = ec_point_formats
+                - length: `0x00 04` = 4 bytes
                 - data: ECPointFormatList
-                    - length: 03 = 3 bytes => 3 formats (1 byte / format)
+                    - length: `0x03` = 3 bytes => 3 formats (1 byte / format)
                     - formats:
-                        - 00 = uncompressed
-                        - 01 = ansiX962_compressed_prime
-                        - 02 = ansiX962_compressed_char2
+                        - `0x00` = uncompressed
+                        - `0x01` = ansiX962_compressed_prime
+                        - `0x02` = ansiX962_compressed_char2
             - supported_groups
-                - type: 00 0a = supported_groups (previously elliptic_curves)
-                - length: 00 34 = 52 bytes
+                - type: `0x00 0a` = supported_groups (previously elliptic_curves)
+                - length: `0x00 34` = 52 bytes
                 - data: NamedCurveList
-                    - length: 00 32 = 50 bytes => 25 curves (2 bytes / curve)
+                    - length: `0x00 32` = 50 bytes => 25 curves (2 bytes / curve)
                     - curves:
-                        - 00 0e = sect571r1
-                        - 00 0d = sect571k1
+                        - `0x00 0` = sect571r1
+                        - `0x00 0` = sect571k1
                         - ...
             - session_ticket
-                - type: 00 23 = session_ticket
-                - length: 00 00 = 0 bytes
+                - type: `0x00 23` = session_ticket
+                - length: `0x00 00` = 0 bytes
                 - data: empty
             - heartbeat
-                - type: 00 0f = heartbeat
-                - length: 00 01
-                - data (HeartbeatMode): 01 = peer_allowed_to_send
+                - type: `0x00 0f` = heartbeat
+                - length: `0x00 01`
+                - data (HeartbeatMode): `0x01` = peer_allowed_to_send
 
 ## Heartbeat
 Content type: `0x18`  
