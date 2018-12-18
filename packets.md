@@ -13,7 +13,7 @@ The SSL / TLS protocol actually consists of several subprotocols. The underlying
 - Application data: carries the actual (encrypted) data
 
 ## Record
-- 1: type of the record. See [Record type](#record-type)
+- 1: type of the record. See [Message type](#message-type)
 - 2: SSL / TLS version. See [Version](#version)
     - 1: major
     - 1: minor
@@ -142,7 +142,7 @@ The following packet exploits the heartbleed vulnerability:
 01 40 00
 ```
 
-- type: `0x18` = heartbeat. See [Record type](#record-type)
+- type: `0x18` = heartbeat. See [Message type](#message-type)
 - version: `0x03 02` = TLSv1.1. See [Version](#version)
 - length: `0x00 03` = 3 bytes
 - data: Heartbeat message
@@ -155,7 +155,7 @@ Because of a programming error in OpenSSL 1.0.1, the library will reserve a memo
 
 
 ## Types
-### Record type
+### Message type
 - `0x14`: Change cipher spec. Used to change the ciphers used in an active session
 - `0x15`: Alert. Relays errors, warnings and other informational data
 - `0x16`: Handshake. Control messages to set up communication between server and client
