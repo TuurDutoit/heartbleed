@@ -174,7 +174,7 @@ Because of a programming error in OpenSSL 1.0.1, the library will reserve a memo
 - `0x01`: Client hello. First message by client, or in response to a hello request, or when client wants to renegotiate the connection
 - `0x02`: Server hello. Sent in response to a client hello. Contains the server SSL/ TLS version, chosen cipher suites, etc.
 - `0x0b`: Certificate. Contains the certificate chain of the server, for validation by the client.
-- `0x0c`: Server key exchange. Some encryption algorithms (e.g. Diffie-Helmann) require some extra data to be exchanged, apart from the certificates, in order to agree on a shared secret. This message is sent right after the `Certificate` message (if needed) and contains this extra data.
+- `0x0c`: Server key exchange. Some encryption algorithms (e.g. Diffie-Hellman) require some extra data to be exchanged, apart from the certificates, in order to agree on a shared secret. This message is sent right after the `Certificate` message (if needed) and contains this extra data.
 - `0x0d`: Certificate request. A server can optionally request a certificate from the client by sending this message right after the `Certificate` or `Server key exchange` message(s).
 - `0x0e`: Server done. Signals that the `Certificate` message and other optional messages (`Server key exchange`, etc.) have been sent. The server now awaits the client's response.
 - `0x0f`: Certificate verify / Client certificate. If the server requests a certificate from the client (with a `Certificate request` message), the client responds with this message containing the certificate.
