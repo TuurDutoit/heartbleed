@@ -13,21 +13,54 @@ The SSL / TLS protocol actually consists of several subprotocols. The underlying
 - Application data: carries the actual (encrypted) data
 
 ## Record
+```
+    record type   message length
+   /             /
+--------------------------...------
+| 1 |   2   |   2   |   message   |
+--------------------------...------
+         \                 \
+          TLS version       content
+```
+
 - 1: type of the record. See [Message type](#message-type)
 - 2: SSL / TLS version. See [Version](#version)
     - 1: major
     - 1: minor
 - 2: length of the record (excluding this header)
-- *: data. Depends on record type
+- *: message. Depends on record type
 
 ### Handshake
 Content type: `0x16`
 
+```
+    content type       content
+   /                  /
+---------------------...----
+| 1 |     3     |   data   |
+---------------------...----
+           \
+            message length
+```
+
 - 1: handshake type; see [Handshake type](#handshake-type)
 - 3: length of the message (excluding this header)
-- *: data. Depends on message type
+- *: data. Depends on handshake type
 
 #### Handshake: Client hello
+Handshake type: `0x01`
+```
+                                                            cipher suites             compression methods
+      version               random bytes  session id    ---------------------           ---------------       compression methods length
+     /                     /             /             /                     \         /               \     /
+------------------------- ...----------...-------------------------------...------------------------...----------------------------------
+|   2   |      4      |   28   | 1 |   0-32   |   2   |  CS1  |  CS2  |  ...  |   2   | CM1 | CM2 | ... |   2   |  EX1  |  EX2  |  ...  |
+--------------------------...----------...-------------------------------...------------------------...----------------------------------
+                \                 \                \                               \                             \                     /
+                 timestamp         sess. id length  cipher suites length            compression methods length    ---------------------
+                                                                                                                        extensions
+```
+
 - 2: SSL / TLS version. Usually equal to the version specified in the record header. See [Version](#version)
 - 4: current unix datetime
 - 28: random bytes. Used to construct the master secret
@@ -151,7 +184,7 @@ The following packet exploits the heartbleed vulnerability:
     - payload: empty
     - padding: empty
 
-Because of a programming error in OpenSSL 1.0.1, the library will reserve a memory segment of 16384 bytes and copies the (empty) payload and padding into it, which leaves the memory unchanged. Then, it sends back a response, including the content of this memory segment - which wasn't cleared in any way, exposing potentially sensitive data to clients.
+Because of a programming error in OpenSSL 1.0.1, the library will reserve a memory segment of 16384 bytes and fill it with bytes from the request. This is very short, though, so OpenSSL will start reading from memory regions past the request object, where it may have stored user data, passwords or even private keys.
 
 
 ## Types
